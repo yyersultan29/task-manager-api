@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"net/http"
+	"task-manager-api/internal/httputil"
 	"time"
 )
 
@@ -19,7 +20,7 @@ func (app *app) handleSlow(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *app) handleHealth(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, http.StatusOK, map[string]string{
+	httputil.WriteJSON(w, http.StatusOK, map[string]string{
 		"status": "ok",
 	})
 }
@@ -30,7 +31,7 @@ func (app *app) handleTimeout(w http.ResponseWriter, r *http.Request) {
 
 	err := waitForWork(ctx, 2*time.Second)
 	if err != nil {
-		writeError(w, http.StatusGatewayTimeout, err.Error())
+		httputil.WriteError(w, http.StatusGatewayTimeout, err.Error())
 		return
 	}
 

@@ -3,42 +3,64 @@ package handler
 import (
 	"encoding/json"
 	"errors"
+	"io"
+	"mime"
 	"net/http"
+	"task-manager-api/internal/httputil"
 )
 
 func (h *Handler) HandleTasks(w http.ResponseWriter, r *http.Request) {
 	tasks, err := h.service.List(r.Context())
 	if err != nil {
 		h.logger.Error("can not get task from bd", "error", err)
-		writeError(w, http.StatusInternalServerError, "could not list tasks")
+		httputil.WriteError(w, http.StatusInternalServerError, "could not list tasks")
 		return
 	}
 
-	writeJSON(w, http.StatusOK, toTaskResponses(tasks))
+	httputil.WriteJSON(w, http.StatusOK, toTaskResponses(tasks))
 }
 
 func (h *Handler) HandleTaskCreate(w http.ResponseWriter, r *http.Request) {
 	var request createTaskRequest
 	var maxBytesErr *http.MaxBytesError
 
+	mediaType, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
+
+	if err != nil || mediaType != "application/json" {
+		httputil.WriteError(w, http.StatusUnsupportedMediaType, "Content-type must be application/json")
+		return
+	}
+
 	r.Body = http.MaxBytesReader(w, r.Body, maxJSONBodyBytes)
 
 	decoder := json.NewDecoder(r.Body)
 	decoder.DisallowUnknownFields()
-	err := decoder.Decode(&request)
+	err = decoder.Decode(&request)
 
 	if errors.As(err, &maxBytesErr) {
-		writeError(w, http.StatusRequestEntityTooLarge, "request body too large")
+		httputil.WriteError(w, http.StatusRequestEntityTooLarge, "request body too large")
 		return
 	}
 
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid json")
+		httputil.WriteError(w, http.StatusBadRequest, "invalid json")
+		return
+	}
+
+	err = decoder.Decode(&struct{}{})
+
+	if errors.As(err, &maxBytesErr) {
+		httputil.WriteError(w, http.StatusRequestEntityTooLarge, "request body too large")
+		return
+	}
+
+	if err != io.EOF {
+		httputil.WriteError(w, http.StatusBadRequest, "invalid json")
 		return
 	}
 
 	if request.Title == nil {
-		writeError(w, http.StatusBadRequest, "title is required")
+		httputil.WriteError(w, http.StatusBadRequest, "title is required")
 		return
 	}
 
@@ -49,17 +71,17 @@ func (h *Handler) HandleTaskCreate(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		h.logger.Error("cannot create task in bd", "error", err)
-		writeError(w, http.StatusInternalServerError, "could not create task")
+		httputil.WriteError(w, http.StatusInternalServerError, "could not create task")
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, toTaskResponse(createdTask))
+	httputil.WriteJSON(w, http.StatusCreated, toTaskResponse(createdTask))
 }
 
 func (h *Handler) HandleTaskDelete(w http.ResponseWriter, r *http.Request) {
 	id, err := getID(r)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid task id")
+		httputil.WriteError(w, http.StatusBadRequest, "invalid task id")
 		return
 	}
 
@@ -69,7 +91,7 @@ func (h *Handler) HandleTaskDelete(w http.ResponseWriter, r *http.Request) {
 	}
 	if err != nil {
 		h.logger.Error("cannot delete in bd", "error", err)
-		writeError(w, http.StatusInternalServerError, "could not delete task")
+		httputil.WriteError(w, http.StatusInternalServerError, "could not delete task")
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -78,7 +100,7 @@ func (h *Handler) HandleTaskDelete(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) HandleTaskComplete(w http.ResponseWriter, r *http.Request) {
 	id, err := getID(r)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid task id")
+		httputil.WriteError(w, http.StatusBadRequest, "invalid task id")
 		return
 	}
 
@@ -89,16 +111,16 @@ func (h *Handler) HandleTaskComplete(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		h.logger.Error("update task in bd error", "error", err)
-		writeError(w, http.StatusInternalServerError, "could not update task")
+		httputil.WriteError(w, http.StatusInternalServerError, "could not update task")
 		return
 	}
-	writeJSON(w, http.StatusOK, toTaskResponse(updatedTask))
+	httputil.WriteJSON(w, http.StatusOK, toTaskResponse(updatedTask))
 }
 
 func (h *Handler) HandleTaskByID(w http.ResponseWriter, r *http.Request) {
 	id, err := getID(r)
 	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid task id")
+		httputil.WriteError(w, http.StatusBadRequest, "invalid task id")
 		return
 	}
 
@@ -109,8 +131,8 @@ func (h *Handler) HandleTaskByID(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		h.logger.Error("get task by id in bd", "error", err)
-		writeError(w, http.StatusInternalServerError, "could not get task")
+		httputil.WriteError(w, http.StatusInternalServerError, "could not get task")
 		return
 	}
-	writeJSON(w, http.StatusOK, toTaskResponse(foundTask))
+	httputil.WriteJSON(w, http.StatusOK, toTaskResponse(foundTask))
 }

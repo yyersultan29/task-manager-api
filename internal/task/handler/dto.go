@@ -4,10 +4,6 @@ import (
 	"task-manager-api/internal/task"
 )
 
-type errorResponse struct {
-	Error string `json:"error"`
-}
-
 type createTaskRequest struct {
 	Title *string `json:"title"`
 }

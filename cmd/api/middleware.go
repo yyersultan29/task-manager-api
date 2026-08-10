@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"log/slog"
 	"net/http"
+	"task-manager-api/internal/httputil"
 	"time"
 )
 
@@ -15,8 +16,8 @@ type statusResponseWriter struct {
 }
 
 type contextKey string
-const requestIDKey contextKey = "request_id"
 
+const requestIDKey contextKey = "request_id"
 
 func (w *statusResponseWriter) WriteHeader(status int) {
 	w.status = status
@@ -46,26 +47,26 @@ func loggingMiddleware(logger *slog.Logger, next http.Handler) http.Handler {
 
 func requestIDMiddleware(next http.Handler) http.Handler {
 
-	return  http.HandlerFunc(func(w http.ResponseWriter,r *http.Request) {
-		requestID,err := generateRequestID()
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestID, err := generateRequestID()
 
 		if err != nil {
-			writeError(w,http.StatusInternalServerError,"could not create request id")
-			return  
+			httputil.WriteError(w, http.StatusInternalServerError, "could not create request id")
+			return
 		}
-		w.Header().Set("X-Request-ID",requestID)
+		w.Header().Set("X-Request-ID", requestID)
 
-		ctx := context.WithValue(r.Context(),requestIDKey,requestID)
-		next.ServeHTTP(w,r.WithContext(ctx))
+		ctx := context.WithValue(r.Context(), requestIDKey, requestID)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
 func generateRequestID() (string, error) {
-	b := make([]byte,16)
+	b := make([]byte, 16)
 
-	if _,err := rand.Read(b); err != nil {
-		return  "",err
+	if _, err := rand.Read(b); err != nil {
+		return "", err
 	}
 
-	return  hex.EncodeToString(b),nil
+	return hex.EncodeToString(b), nil
 }
