@@ -35,3 +35,42 @@ func writeTaskDomainError(w http.ResponseWriter, err error) bool {
 
 	return false
 }
+
+func parseListOptions(r *http.Request) (task.ListOptions, error) {
+	query := r.URL.Query()
+
+	options := task.ListOptions{
+		Limit: defaultListLimit,
+	}
+
+	if limitText := query.Get("limit"); limitText != "" {
+		limit, err := strconv.Atoi(limitText)
+		if err != nil || limit < 1 || limit > maxListLimit {
+			return task.ListOptions{}, errors.New("invalid limit")
+		}
+		options.Limit = limit
+	}
+
+	if offsetText := query.Get("offset"); offsetText != "" {
+		offset, err := strconv.Atoi(offsetText)
+		if err != nil || offset < 0 {
+			return task.ListOptions{}, errors.New("invalid offset")
+		}
+		options.Offset = offset
+	}
+
+	switch query.Get("done") {
+	case "":
+		return options, nil
+	case "true":
+		done := true
+		options.Done = &done
+	case "false":
+		done := false
+		options.Done = &done
+	default:
+		return task.ListOptions{}, errors.New("invalid done")
+	}
+
+	return options, nil
+}

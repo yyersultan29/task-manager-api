@@ -7,6 +7,12 @@ import (
 	"time"
 )
 
+type ListOptions struct {
+	Limit int
+	Offset int
+	Done *bool
+}
+
 type Task struct {
 	ID        int
 	Title     string

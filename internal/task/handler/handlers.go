@@ -10,7 +10,15 @@ import (
 )
 
 func (h *Handler) HandleTasks(w http.ResponseWriter, r *http.Request) {
-	tasks, err := h.service.List(r.Context())
+
+	options, err := parseListOptions(r)
+
+	if err != nil {
+		httputil.WriteError(w, http.StatusBadRequest, "invalid query parameters")
+		return
+	}
+
+	tasks, err := h.service.List(r.Context(), options)
 	if err != nil {
 		h.logger.Error("can not get task from bd", "error", err)
 		httputil.WriteError(w, http.StatusInternalServerError, "could not list tasks")

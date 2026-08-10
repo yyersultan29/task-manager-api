@@ -17,7 +17,7 @@ func NewMemoryRepository(tasks []Task) *MemoryRepository {
 	}
 }
 
-func (r *MemoryRepository) List(ctx context.Context) ([]Task, error) {
+func (r *MemoryRepository) List(ctx context.Context, options ListOptions) ([]Task, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 	tasks := make([]Task, len(r.tasks))

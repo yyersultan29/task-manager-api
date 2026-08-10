@@ -18,10 +18,14 @@ func NewPostgresRepository(db *pgxpool.Pool) *PostgresRepository {
 	}
 }
 
-func (r *PostgresRepository) List(ctx context.Context) ([]Task, error) {
+func (r *PostgresRepository) List(ctx context.Context, options ListOptions) ([]Task, error) {
 	rows, err := r.db.Query(ctx, `
-	    SELECT id, title, done, created_at FROM tasks ORDER BY id
-	`)
+	    SELECT id, title, done, created_at 
+		FROM tasks 
+		WHERE ($1::boolean IS NULL OR done = $1)
+		ORDER BY id
+		LIMIT $2 OFFSET $3
+	`, options.Done,options.Limit,options.Offset)
 
 	if err != nil {
 		return nil, err

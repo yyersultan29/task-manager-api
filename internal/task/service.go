@@ -7,7 +7,7 @@ import (
 )
 
 type Repository interface {
-	List(ctx context.Context) ([]Task, error)
+	List(ctx context.Context, options ListOptions) ([]Task, error)
 	Create(ctx context.Context, title string) (Task, error)
 	FindByID(ctx context.Context, id int) (Task, error)
 	Complete(ctx context.Context, id int) (Task, error)
@@ -38,8 +38,8 @@ func (s *Service) Create(ctx context.Context, title string) (Task, error) {
 	return s.repo.Create(ctx, title)
 }
 
-func (s *Service) List(ctx context.Context) ([]Task, error) {
-	return s.repo.List(ctx)
+func (s *Service) List(ctx context.Context, options ListOptions) ([]Task, error) {
+	return s.repo.List(ctx, options)
 }
 
 func (s *Service) FindByID(ctx context.Context, id int) (Task, error) {
