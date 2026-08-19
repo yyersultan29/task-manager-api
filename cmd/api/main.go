@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"syscall"
 	"task-manager-api/internal/task"
+	"task-manager-api/internal/user"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -42,7 +43,10 @@ func main() {
 
 	logger.Info("database connected")
 
-	application := newApp(logger, task.NewPostgresRepository(db))
+	application := newApp(
+		logger,
+		task.NewPostgresRepository(db),
+		user.NewPostgresRepository(db))
 
 	server := &http.Server{
 		Addr:         cfg.httpAddr,
