@@ -10,7 +10,8 @@ import (
 )
 
 type Service struct {
-	repo user.Repository
+	repo   user.Repository
+	tokens *TokenManager
 }
 
 var (
@@ -19,9 +20,10 @@ var (
 	ErrInvalidCredentials = errors.New("invalid credentials")
 )
 
-func NewService(repo user.Repository) *Service {
+func NewService(repo user.Repository, tokens *TokenManager) *Service {
 	return &Service{
-		repo: repo,
+		repo:   repo,
+		tokens: tokens,
 	}
 }
 
@@ -50,30 +52,33 @@ func (s *Service) Register(ctx context.Context, email string, password string) (
 
 }
 
-func (s *Service) Login(ctx context.Context, email string, password string) (user.User, error) {
+func (s *Service) Login(ctx context.Context, email string, password string) (string, error) {
 	email = strings.TrimSpace(email)
 	email = strings.ToLower(email)
 
 	if !isValidEmail(email) {
-		return user.User{}, ErrInvalidEmail
+		return "", ErrInvalidEmail
 	}
 
 	foundUser, err := s.repo.FindByEmail(ctx, email)
 
 	if errors.Is(err, user.ErrNotFound) {
-		return user.User{}, ErrInvalidCredentials
+		return "", ErrInvalidCredentials
 	}
 	if err != nil {
-		return user.User{}, err
+		return "", err
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(foundUser.PasswordHash), []byte(password))
 
 	if err != nil {
-		return user.User{}, ErrInvalidCredentials
+		return "", ErrInvalidCredentials
 	}
 
-	// here we need generate token
+	accessToken, err := s.tokens.Generate(foundUser.ID)
+	if err != nil {
+		return "", err
+	}
 
-	return foundUser, nil
+	return accessToken, nil
 }

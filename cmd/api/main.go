@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"task-manager-api/internal/auth"
 	"task-manager-api/internal/task"
 	"task-manager-api/internal/user"
 	"time"
@@ -43,10 +44,16 @@ func main() {
 
 	logger.Info("database connected")
 
+	// token generate
+
+	tokenManager := auth.NewTokenManager(cfg.jwtSecret, cfg.jwtTTL)
+
 	application := newApp(
 		logger,
 		task.NewPostgresRepository(db),
-		user.NewPostgresRepository(db))
+		user.NewPostgresRepository(db),
+		tokenManager,
+	)
 
 	server := &http.Server{
 		Addr:         cfg.httpAddr,

@@ -6,11 +6,12 @@ func (app *app) routes() http.Handler {
 
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("GET /tasks", app.taskHandler.HandleTasks)
-	mux.HandleFunc("GET /tasks/{id}", app.taskHandler.HandleTaskByID)
-	mux.HandleFunc("POST /tasks", app.taskHandler.HandleTaskCreate)
-	mux.HandleFunc("DELETE /tasks/{id}", app.taskHandler.HandleTaskDelete)
-	mux.HandleFunc("POST /tasks/{id}/complete", app.taskHandler.HandleTaskComplete)
+	mux.Handle("GET /tasks", app.authMiddleware(http.HandlerFunc(app.taskHandler.HandleTasks)))
+
+	mux.Handle("GET /tasks/{id}", app.authMiddleware(http.HandlerFunc(app.taskHandler.HandleTaskByID)))
+	mux.Handle("POST /tasks", app.authMiddleware(http.HandlerFunc(app.taskHandler.HandleTaskCreate)))
+	mux.Handle("DELETE /tasks/{id}", app.authMiddleware(http.HandlerFunc(app.taskHandler.HandleTaskDelete)))
+	mux.Handle("POST /tasks/{id}/complete", app.authMiddleware(http.HandlerFunc(app.taskHandler.HandleTaskComplete)))
 
 	mux.HandleFunc("POST /auth/register", app.authHandler.HandleRegister)
 	mux.HandleFunc("POST /auth/login", app.authHandler.HandleLogin)

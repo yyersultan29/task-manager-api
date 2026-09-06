@@ -16,5 +16,5 @@ type loginRequest struct {
 }
 
 type loginResponse struct {
-	Email *string `json:"email"`
+	AccessToken string `json:"access_token"`
 }

@@ -6,6 +6,8 @@ import (
 	"encoding/hex"
 	"log/slog"
 	"net/http"
+	"strings"
+	"task-manager-api/internal/auth"
 	"task-manager-api/internal/httputil"
 	"time"
 )
@@ -69,4 +71,27 @@ func generateRequestID() (string, error) {
 	}
 
 	return hex.EncodeToString(b), nil
+}
+
+func (app *app) authMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		authHeader := r.Header.Get("Authorization")
+
+		scheme, accessToken, found := strings.Cut(authHeader, " ")
+		if !found || scheme != "Bearer" || accessToken == "" {
+			httputil.WriteError(w, http.StatusUnauthorized, "unauthorized")
+			return
+		}
+
+		userID, err := app.tokenManager.Verify(accessToken)
+
+		if err != nil {
+			httputil.WriteError(w, http.StatusUnauthorized, "unauthorized")
+			return
+		}
+		ctx := auth.WithUserID(r.Context(), userID)
+
+		next.ServeHTTP(w, r.WithContext(ctx))
+
+	})
 }

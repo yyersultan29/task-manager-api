@@ -144,7 +144,7 @@ func (h *Handler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.service.Login(r.Context(), *request.Email, *request.Password)
+	accessToken, err := h.service.Login(r.Context(), *request.Email, *request.Password)
 
 	if errors.Is(err, ErrInvalidEmail) {
 		httputil.WriteError(w, http.StatusBadRequest, "invalid email")
@@ -164,6 +164,6 @@ func (h *Handler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 
 	httputil.WriteJSON(
 		w, http.StatusOK,
-		loginResponse{Email: &user.Email})
+		loginResponse{AccessToken: accessToken})
 
 }

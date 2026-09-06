@@ -7,18 +7,20 @@ import (
 )
 
 type config struct {
-	databaseURL string
-	httpAddr    string
-
+	databaseURL  string
+	httpAddr     string
 	readTimeout  time.Duration
 	writeTimeout time.Duration
 	idleTimeout  time.Duration
+	jwtSecret    string
+	jwtTTL       time.Duration
 }
 
 var (
 	defaultReadTimeout  = 5 * time.Second
 	defaultWriteTimeout = 10 * time.Second
 	defaultIdleTimeout  = 60 * time.Second
+	defaultTokenTTL     = time.Hour
 )
 
 func loadConfig() (config, error) {
@@ -37,12 +39,27 @@ func loadConfig() (config, error) {
 		return config{}, err
 	}
 
+	jwtTTL, err := getDuration("JWT_TTL", defaultTokenTTL)
+	if err != nil {
+		return config{}, err
+	}
+
 	cfg := config{
 		databaseURL:  os.Getenv("DATABASE_URL"),
 		httpAddr:     os.Getenv("HTTP_ADDR"),
 		readTimeout:  readTimeout,
 		writeTimeout: writeTimeout,
 		idleTimeout:  idleTimeout,
+		jwtSecret:    os.Getenv("JWT_SECRET"),
+		jwtTTL:       jwtTTL,
+	}
+
+	if cfg.jwtSecret == "" {
+		return config{}, errors.New("JWT_SECRET is required")
+	}
+
+	if cfg.jwtTTL <= 0 {
+		return config{}, errors.New("JWT_TTL must be greater than 0")
 	}
 
 	if cfg.databaseURL == "" {

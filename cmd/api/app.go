@@ -10,22 +10,26 @@ import (
 )
 
 type app struct {
-	taskHandler *taskhandler.Handler
-	authHandler *authhandler.Handler
-	logger      *slog.Logger
+	taskHandler  *taskhandler.Handler
+	authHandler  *authhandler.Handler
+	logger       *slog.Logger
+	tokenManager *auth.TokenManager
 }
 
 func newApp(
 	logger *slog.Logger,
 	taskRepo task.Repository,
-	userRepo user.Repository) *app {
+	userRepo user.Repository,
+	tokenManager *auth.TokenManager,
+) *app {
 	taskService := task.NewService(taskRepo)
 
-	userService := auth.NewService(userRepo)
+	userService := auth.NewService(userRepo, tokenManager)
 
 	return &app{
-		logger:      logger,
-		taskHandler: taskhandler.New(taskService, logger),
-		authHandler: authhandler.New(*userService, logger),
+		logger:       logger,
+		taskHandler:  taskhandler.New(taskService, logger),
+		authHandler:  authhandler.New(*userService, logger),
+		tokenManager: tokenManager,
 	}
 }
