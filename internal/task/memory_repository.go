@@ -2,6 +2,7 @@ package task
 
 import (
 	"context"
+	"sort"
 	"sync"
 )
 
@@ -18,12 +19,88 @@ func NewMemoryRepository(tasks []Task) *MemoryRepository {
 }
 
 func (r *MemoryRepository) List(ctx context.Context, options ListOptions) ([]Task, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	r.mu.RLock()
-	defer r.mu.RUnlock()
-	tasks := make([]Task, len(r.tasks))
+	tasks := append([]Task(nil), r.tasks...)
+	r.mu.RUnlock()
 
-	copy(tasks, r.tasks)
-	return tasks, nil
+	sort.Slice(tasks, func(i, j int) bool { return tasks[i].ID < tasks[j].ID })
+
+	filtered := make([]Task, 0, len(tasks))
+	for _, task := range tasks {
+		if options.Done != nil && task.Done != *options.Done {
+			continue
+		}
+		filtered = append(filtered, task)
+	}
+	if options.Offset >= len(filtered) || options.Limit <= 0 {
+		return []Task{}, nil
+	}
+	filtered = filtered[options.Offset:]
+	if options.Limit < len(filtered) {
+		filtered = filtered[:options.Limit]
+	}
+	return filtered, nil
+}
+
+func (r *MemoryRepository) ListAfterID(ctx context.Context, afterID int, limit int) ([]Task, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if limit <= 0 {
+		return []Task{}, nil
+	}
+	r.mu.RLock()
+	tasks := append([]Task(nil), r.tasks...)
+	r.mu.RUnlock()
+
+	sort.Slice(tasks, func(i, j int) bool { return tasks[i].ID < tasks[j].ID })
+	items := make([]Task, 0, limit)
+	for _, task := range tasks {
+		if task.ID <= afterID {
+			continue
+		}
+		items = append(items, task)
+		if len(items) == limit {
+			break
+		}
+	}
+	return items, nil
+}
+
+func (r *MemoryRepository) Upsert(ctx context.Context, task Task) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	for i := range r.tasks {
+		if r.tasks[i].ID == task.ID {
+			r.tasks[i] = task
+			return nil
+		}
+	}
+	r.tasks = append(r.tasks, task)
+	sort.Slice(r.tasks, func(i, j int) bool { return r.tasks[i].ID < r.tasks[j].ID })
+	return nil
+}
+
+func (r *MemoryRepository) InsertIfAbsent(ctx context.Context, task Task) (bool, error) {
+	if err := ctx.Err(); err != nil {
+		return false, err
+	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	for i := range r.tasks {
+		if r.tasks[i].ID == task.ID {
+			return false, nil
+		}
+	}
+	r.tasks = append(r.tasks, task)
+	sort.Slice(r.tasks, func(i, j int) bool { return r.tasks[i].ID < r.tasks[j].ID })
+	return true, nil
 }
 
 func (r *MemoryRepository) Create(ctx context.Context, title string) (Task, error) {
