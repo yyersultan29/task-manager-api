@@ -6,6 +6,7 @@ import (
 	"io"
 	"mime"
 	"net/http"
+	"task-manager-api/internal/auth"
 	"task-manager-api/internal/httputil"
 )
 
@@ -18,7 +19,13 @@ func (h *Handler) HandleTasks(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	tasks, err := h.service.List(r.Context(), options)
+	userID, ok := auth.UserIDFromContext(r.Context())
+	if !ok {
+		httputil.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	tasks, err := h.service.List(r.Context(), userID, options)
 	if err != nil {
 		h.logger.Error("can not get task from bd", "error", err)
 		httputil.WriteError(w, http.StatusInternalServerError, "could not list tasks")
@@ -72,7 +79,13 @@ func (h *Handler) HandleTaskCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	createdTask, err := h.service.Create(r.Context(), *request.Title)
+	userID, ok := auth.UserIDFromContext(r.Context())
+	if !ok {
+		httputil.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	createdTask, err := h.service.Create(r.Context(), userID, *request.Title)
 	if writeTaskDomainError(w, err) {
 		return
 	}
@@ -93,7 +106,13 @@ func (h *Handler) HandleTaskDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.service.Delete(r.Context(), id)
+	userID, ok := auth.UserIDFromContext(r.Context())
+	if !ok {
+		httputil.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	err = h.service.Delete(r.Context(), id, userID)
 	if writeTaskDomainError(w, err) {
 		return
 	}
@@ -112,7 +131,13 @@ func (h *Handler) HandleTaskComplete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	updatedTask, err := h.service.Complete(r.Context(), id)
+	userID, ok := auth.UserIDFromContext(r.Context())
+	if !ok {
+		httputil.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+
+	updatedTask, err := h.service.Complete(r.Context(), id, userID)
 	if writeTaskDomainError(w, err) {
 		return
 	}
@@ -131,8 +156,12 @@ func (h *Handler) HandleTaskByID(w http.ResponseWriter, r *http.Request) {
 		httputil.WriteError(w, http.StatusBadRequest, "invalid task id")
 		return
 	}
-
-	foundTask, err := h.service.FindByID(r.Context(), id)
+	userID, ok := auth.UserIDFromContext(r.Context())
+	if !ok {
+		httputil.WriteError(w, http.StatusUnauthorized, "unauthorized")
+		return
+	}
+	foundTask, err := h.service.FindByID(r.Context(), id, userID)
 	if writeTaskDomainError(w, err) {
 		return
 	}

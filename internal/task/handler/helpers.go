@@ -32,6 +32,10 @@ func writeTaskDomainError(w http.ResponseWriter, err error) bool {
 		httputil.WriteError(w, http.StatusBadRequest, "title is too long")
 		return true
 	}
+	if errors.Is(err, task.ErrForbidden) {
+		httputil.WriteError(w, http.StatusForbidden, "forbidden")
+		return true
+	}
 
 	return false
 }

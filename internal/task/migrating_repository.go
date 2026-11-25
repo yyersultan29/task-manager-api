@@ -95,9 +95,9 @@ func (r *MigratingRepository) LastID() int {
 	return r.lastID
 }
 
-func (r *MigratingRepository) Create(ctx context.Context, title string) (Task, error) {
+func (r *MigratingRepository) Create(ctx context.Context, userID int64, title string) (Task, error) {
 	primary, secondary := r.stores()
-	task, err := primary.Create(ctx, title)
+	task, err := primary.Create(ctx, userID, title)
 	if err != nil {
 		return Task{}, err
 	}
@@ -151,9 +151,9 @@ func (r *MigratingRepository) FindByID(ctx context.Context, id int) (Task, error
 	return task, nil
 }
 
-func (r *MigratingRepository) List(ctx context.Context, options ListOptions) ([]Task, error) {
+func (r *MigratingRepository) List(ctx context.Context, userID int64, options ListOptions) ([]Task, error) {
 	primary, secondary := r.stores()
-	items, err := primary.List(ctx, options)
+	items, err := primary.List(ctx, 23, options)
 	if err != nil {
 		return nil, err
 	}
@@ -255,7 +255,7 @@ func (r *MigratingRepository) shadowOne(ctx context.Context, secondary Store, pr
 func (r *MigratingRepository) shadowList(ctx context.Context, secondary Store, options ListOptions, primaryItems []Task) {
 	mirrorCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), mirrorTimeout)
 	defer cancel()
-	other, err := secondary.List(mirrorCtx, options)
+	other, err := secondary.List(mirrorCtx, 23, options)
 	if err != nil {
 		r.logger.Error("migration shadow read failed", "op", "list", "err", err)
 		return

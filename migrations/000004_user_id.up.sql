@@ -1,0 +1,4 @@
+DELETE FROM tasks WHERE user_id IS NULL;
+
+ALTER TABLE tasks
+    ALTER COLUMN user_id SET NOT NULL;

@@ -13,11 +13,11 @@ const (
 )
 
 type Service interface {
-	List(ctx context.Context, options task.ListOptions) ([]task.Task, error)
-	Create(ctx context.Context, title string) (task.Task, error)
-	FindByID(ctx context.Context, id int) (task.Task, error)
-	Complete(ctx context.Context, id int) (task.Task, error)
-	Delete(ctx context.Context, id int) error
+	List(ctx context.Context, userID int64, options task.ListOptions) ([]task.Task, error)
+	Create(ctx context.Context, userID int64, title string) (task.Task, error)
+	FindByID(ctx context.Context, id int, userID int64) (task.Task, error)
+	Complete(ctx context.Context, id int, userID int64) (task.Task, error)
+	Delete(ctx context.Context, id int, userID int64) error
 }
 
 type Handler struct {

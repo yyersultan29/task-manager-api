@@ -8,13 +8,14 @@ import (
 )
 
 type ListOptions struct {
-	Limit int
+	Limit  int
 	Offset int
-	Done *bool
+	Done   *bool
 }
 
 type Task struct {
 	ID        int
+	UserID    int64
 	Title     string
 	Done      bool
 	CreatedAt time.Time
@@ -25,6 +26,7 @@ var (
 	ErrTitleRequired = errors.New("title is required")
 	ErrInvalidID     = errors.New("invalid task id")
 	ErrTitleTooLong  = errors.New("title length too long")
+	ErrForbidden     = errors.New("forbidden")
 )
 
 const maxTitleLength = 120
@@ -47,7 +49,7 @@ func CountCompleted(tasks []Task) int {
 	return count
 }
 
-func Create(tasks []Task, title string) ([]Task, error) {
+func Create(tasks []Task, userID int64, title string) ([]Task, error) {
 
 	title = strings.TrimSpace(title)
 
@@ -63,7 +65,7 @@ func Create(tasks []Task, title string) ([]Task, error) {
 		}
 	}
 
-	newTask := Task{ID: nextID, Title: title, Done: false}
+	newTask := Task{ID: nextID, UserID: userID, Title: title, Done: false}
 
 	newTasks := append(tasks, newTask)
 

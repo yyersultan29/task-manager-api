@@ -18,7 +18,7 @@ func NewMemoryRepository(tasks []Task) *MemoryRepository {
 	}
 }
 
-func (r *MemoryRepository) List(ctx context.Context, options ListOptions) ([]Task, error) {
+func (r *MemoryRepository) List(ctx context.Context, userID int64, options ListOptions) ([]Task, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
@@ -103,12 +103,12 @@ func (r *MemoryRepository) InsertIfAbsent(ctx context.Context, task Task) (bool,
 	return true, nil
 }
 
-func (r *MemoryRepository) Create(ctx context.Context, title string) (Task, error) {
+func (r *MemoryRepository) Create(ctx context.Context, userID int64, title string) (Task, error) {
 	var err error
 
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	r.tasks, err = Create(r.tasks, title)
+	r.tasks, err = Create(r.tasks, userID, title)
 	if err != nil {
 		return Task{}, err
 	}

@@ -1,5 +1,5 @@
 ALTER TABLE tasks
-    ADD COLUMN user_id BIGINT NOT NULL,
+    ADD COLUMN user_id BIGINT,
     ADD CONSTRAINT tasks_user_id_fkey
         FOREIGN KEY (user_id) REFERENCES users(id);
 

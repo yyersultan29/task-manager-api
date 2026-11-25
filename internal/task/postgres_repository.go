@@ -19,14 +19,15 @@ func NewPostgresRepository(db *pgxpool.Pool) *PostgresRepository {
 	}
 }
 
-func (r *PostgresRepository) List(ctx context.Context, options ListOptions) ([]Task, error) {
+func (r *PostgresRepository) List(ctx context.Context, userID int64, options ListOptions) ([]Task, error) {
 	rows, err := r.db.Query(ctx, `
 	    SELECT id, title, done, created_at 
 		FROM tasks 
-		WHERE ($1::boolean IS NULL OR done = $1)
+		WHERE  user_id = $1
+			AND ($2::boolean IS NULL OR done = $2)
 		ORDER BY id
-		LIMIT $2 OFFSET $3
-	`, options.Done, options.Limit, options.Offset)
+		LIMIT $3 OFFSET $4
+	`, userID, options.Done, options.Limit, options.Offset)
 
 	if err != nil {
 		return nil, err
@@ -53,8 +54,8 @@ func (r *PostgresRepository) List(ctx context.Context, options ListOptions) ([]T
 func (r *PostgresRepository) FindByID(ctx context.Context, id int) (Task, error) {
 
 	var task Task
-	err := r.db.QueryRow(ctx, `SELECT id, title, done, created_at FROM tasks WHERE id = $1`, id).
-		Scan(&task.ID, &task.Title, &task.Done, &task.CreatedAt)
+	err := r.db.QueryRow(ctx, `SELECT id, title, user_id, done, created_at FROM tasks WHERE id = $1`, id).
+		Scan(&task.ID, &task.Title, &task.UserID, &task.Done, &task.CreatedAt)
 
 	if errors.Is(err, pgx.ErrNoRows) {
 		return Task{}, ErrNotFound
@@ -66,13 +67,13 @@ func (r *PostgresRepository) FindByID(ctx context.Context, id int) (Task, error)
 	return task, nil
 }
 
-func (r *PostgresRepository) Create(ctx context.Context, title string) (Task, error) {
+func (r *PostgresRepository) Create(ctx context.Context, userID int64, title string) (Task, error) {
 	var task Task
 	err := r.db.QueryRow(ctx, `
-	INSERT INTO tasks (title) 
-	VALUES ($1) 
-	RETURNING id, title, done, created_at`,
-		title).Scan(&task.ID, &task.Title, &task.Done, &task.CreatedAt)
+	INSERT INTO tasks (title, user_id) 
+	VALUES ($1, $2) 
+	RETURNING id, title, user_id, done, created_at`,
+		title, userID).Scan(&task.ID, &task.Title, &task.UserID, &task.Done, &task.CreatedAt)
 
 	if err != nil {
 		return Task{}, err

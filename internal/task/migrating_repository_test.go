@@ -12,7 +12,7 @@ func TestBackfillResumesAfterSecondaryFailure(t *testing.T) {
 	ctx := context.Background()
 	primary := NewMemoryRepository(nil)
 	for _, title := range []string{"one", "two", "three"} {
-		if _, err := primary.Create(ctx, title); err != nil {
+		if _, err := primary.Create(ctx, 23, title); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -39,7 +39,7 @@ func TestBackfillResumesAfterSecondaryFailure(t *testing.T) {
 	if got := repo.LastID(); got != 3 {
 		t.Fatalf("checkpoint = %d, want 3", got)
 	}
-	items, err := secondary.List(ctx, ListOptions{Limit: 10})
+	items, err := secondary.List(ctx, 23, ListOptions{Limit: 10})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -52,7 +52,7 @@ func TestDeleteDuringBackfillDoesNotResurrect(t *testing.T) {
 	ctx := context.Background()
 	primary := NewMemoryRepository(nil)
 	for _, title := range []string{"keep", "drop", "keep-too"} {
-		if _, err := primary.Create(ctx, title); err != nil {
+		if _, err := primary.Create(ctx, 23, title); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -73,7 +73,7 @@ func TestDeleteDuringBackfillDoesNotResurrect(t *testing.T) {
 	if !errors.Is(err, ErrNotFound) {
 		t.Fatalf("deleted row came back: %v", err)
 	}
-	items, err := secondary.List(ctx, ListOptions{Limit: 10})
+	items, err := secondary.List(ctx, 23, ListOptions{Limit: 10})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -94,7 +94,7 @@ func TestSecondaryWriteFailureStaysOffTheUserPath(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	task, err := repo.Create(ctx, "ship it")
+	task, err := repo.Create(ctx, 34, "ship it")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -112,7 +112,7 @@ func TestSecondaryWriteFailureStaysOffTheUserPath(t *testing.T) {
 func TestShadowReadReportsMismatchAndReturnsPrimary(t *testing.T) {
 	ctx := context.Background()
 	primary := NewMemoryRepository(nil)
-	created, err := primary.Create(ctx, "original")
+	created, err := primary.Create(ctx, 23, "original")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -151,7 +151,7 @@ func TestCutoverSwapsTheReadPath(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	first, err := repo.Create(ctx, "before")
+	first, err := repo.Create(ctx, 23, "before")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -165,7 +165,7 @@ func TestCutoverSwapsTheReadPath(t *testing.T) {
 		t.Fatalf("title = %q", got.Title)
 	}
 
-	second, err := repo.Create(ctx, "after")
+	second, err := repo.Create(ctx, 23, "after")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -180,7 +180,7 @@ func TestCutoverSwapsTheReadPath(t *testing.T) {
 func TestBackfillDoesNotOverwriteNewerDualWrite(t *testing.T) {
 	ctx := context.Background()
 	primary := NewMemoryRepository(nil)
-	created, err := primary.Create(ctx, "open")
+	created, err := primary.Create(ctx, 23, "open")
 	if err != nil {
 		t.Fatal(err)
 	}
